@@ -277,6 +277,10 @@ CREATE POLICY "reserva publica" ON numeros FOR UPDATE USING (status = 'available
       <div class="pix-key" onclick="copyPix()">📱 61992659634</div>
       <div class="copy-hint">clique para copiar</div>
     </div>
+    <a href="https://wa.me/5561992659634?text=Ol%C3%A1!%20Segue%20meu%20comprovante%20da%20Rifa%20do%20Diogo%20%F0%9F%99%8F" target="_blank"
+      style="display:inline-block;background:#25D366;border-radius:12px;padding:10px 16px;color:#fff;font-family:Nunito,sans-serif;font-size:.88rem;font-weight:800;text-decoration:none;">
+      📲 Enviar comprovante
+    </a>
   </div>
 
   <button class="admin-toggle" onclick="toggleAdmin()">⚙️ Painel Administrativo</button>
@@ -332,6 +336,10 @@ CREATE POLICY "reserva publica" ON numeros FOR UPDATE USING (status = 'available
       <button class="btn-cancelar" onclick="closeModal()">Cancelar</button>
       <button class="btn-reservar" id="btnReservar" onclick="confirmar()">✅ Reservar!</button>
     </div>
+    <a id="btnWhats" href="#" target="_blank"
+      style="display:none;margin-top:10px;width:100%;background:#25D366;border:none;border-radius:12px;padding:13px;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:800;text-align:center;text-decoration:none;cursor:pointer;">
+      📲 Enviar comprovante no WhatsApp
+    </a>
   </div>
 </div>
 
@@ -496,7 +504,24 @@ async function confirmar() {
     return;
   }
   toast(`🎉 Número ${String(selNum).padStart(3,'0')} reservado para ${nome}!`);
+  // Mostrar botão WhatsApp com mensagem pré-preenchida
+  const num = String(selNum).padStart(3,'0');
+  const msg = encodeURIComponent(`Olá! Acabei de reservar o número ${num} da Rifa do Diogo. Segue o comprovante do PIX de R$ 20,00. Nome: ${nome}`);
+  const btnW = document.getElementById('btnWhats');
+  btnW.href = `https://wa.me/5561992659634?text=${msg}`;
+  btnW.style.display = 'block';
   closeModal();
+  // Abrir modal de confirmação com botão WhatsApp
+  setTimeout(() => {
+    document.getElementById('mNum').textContent = num;
+    document.getElementById('mTitle').textContent = '✅ Reservado! Agora envie o comprovante';
+    document.getElementById('mName').style.display = 'none';
+    document.getElementById('mPhone').style.display = 'none';
+    document.querySelectorAll('.modal label').forEach(l => l.style.display='none');
+    document.getElementById('btnReservar').style.display = 'none';
+    btnW.style.display = 'block';
+    document.getElementById('overlay').classList.add('open');
+  }, 300);
 }
 
 // ═══════════════════════════════════════════════════════════
