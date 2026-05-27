@@ -253,7 +253,7 @@ CREATE POLICY "reserva publica" ON numeros FOR UPDATE USING (status = 'available
     <div class="prize-icon">🍳</div>
     <div>
       <h3>Prêmio: Jogo de Panelas 5 Peças</h3>
-      <p>Cores preta ou cinza &nbsp;·&nbsp; Cada número: <strong style="color:var(--gold)">R$ 10,00</strong></p>
+      <p>Cores preta ou cinza &nbsp;·&nbsp; Cada número: <strong style="color:var(--gold)">R$ 20,00</strong></p>
     </div>
   </div>
 
@@ -312,7 +312,7 @@ CREATE POLICY "reserva publica" ON numeros FOR UPDATE USING (status = 'available
     <input type="tel"   id="mPhone" placeholder="Ex: 61999998888"       maxlength="20">
 
     <div class="modal-pix">
-      💸 Após reservar, envie <strong>R$ 10,00</strong> via PIX:<br>
+      💸 Após reservar, envie <strong>R$ 20,00</strong> via PIX:<br>
       <strong style="font-size:1.02rem">61992659634</strong><br>
       <span style="color:#aaa;font-size:.78rem">Francineide Gonçalves Ramos</span><br><br>
       Envie o comprovante no WhatsApp para confirmar! 📲
@@ -421,7 +421,7 @@ function renderStats() {
     <div class="stat-card"><div class="stat-num" style="color:var(--available)">${av}</div><div class="stat-lbl">Disponíveis</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--reserved)">${re}</div><div class="stat-lbl">Reservados</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--paid)">${pa}</div><div class="stat-lbl">Pagos</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:var(--gold)">R$${pa*10}</div><div class="stat-lbl">Arrecadado</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--gold)">R$${pa*20}</div><div class="stat-lbl">Arrecadado</div></div>
   `;
 }
 
