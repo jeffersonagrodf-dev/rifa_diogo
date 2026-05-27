@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rifa Beneficente – Ajude o Diogo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --blue-dark: #1a0a6e;
+    --blue-mid: #2d1bb5;
+    --purple: #6c3de8;
+    --pink: #e040fb;
+    --gold: #ffd54f;
+    --available: #4ade80;
+    --reserved: #facc15;
+    --paid: #60a5fa;
+    --danger: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 50%, #4a1b8a 100%);
+    min-height: 100vh;
+    color: #fff;
+    overflow-x: hidden;
+  }
+  .hearts { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .heart { position: absolute; font-size: 2rem; opacity: 0.07; animation: floatHeart linear infinite; }
+  @keyframes floatHeart {
+    0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0.07; }
+    100% { transform: translateY(-10vh)  rotate(360deg); opacity: 0;    }
+  }
+  .container { position: relative; z-index: 1; max-width: 920px; margin: 0 auto; padding: 20px 16px 70px; }
+
+  /* ── SETUP BANNER ─────────────────────────────── */
+  #setupBanner {
+    background: linear-gradient(135deg,#7c3aed,#db2777);
+    border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
+    font-size: 0.92rem; line-height: 1.7;
+  }
+  #setupBanner h2 { font-size: 1.1rem; margin-bottom: 8px; }
+  #setupBanner code {
+    background: rgba(0,0,0,0.3); border-radius: 6px;
+    padding: 2px 7px; font-size: 0.85rem; display: inline-block;
+  }
+  #setupBanner a { color: #fde68a; }
+
+  /* ── CONFIG FORM ──────────────────────────────── */
+  #configForm {
+    background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 18px; padding: 24px; margin-bottom: 28px;
+  }
+  #configForm h3 { font-size: 1rem; font-weight: 800; color: var(--gold); margin-bottom: 14px; }
+  .cfg-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cfg-row input {
+    flex: 1; min-width: 200px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 10px; padding: 10px 14px; color: #fff;
+    font-family: 'Nunito',sans-serif; font-size: 0.9rem; outline: none;
+  }
+  .cfg-row input:focus { border-color: var(--pink); }
+  .cfg-row input::placeholder { color: rgba(255,255,255,0.4); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    border: none; border-radius: 12px; padding: 11px 22px;
+    color: #fff; font-family: 'Nunito',sans-serif; font-size: 0.95rem;
+    font-weight: 800; cursor: pointer; transition: opacity .2s;
+  }
+  .btn-primary:hover { opacity: .88; }
+
+  /* ── HEADER ───────────────────────────────────── */
+  header { text-align: center; padding: 26px 0 18px; }
+  .badge { display: inline-block; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 5px 16px; font-size: .76rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: #d4b8ff; margin-bottom: 10px; }
+  .t1 { font-family: 'Pacifico',cursive; font-size: clamp(2.4rem,8vw,4rem); line-height: 1; text-shadow: 0 4px 24px rgba(108,61,232,.8); }
+  .t2 { font-size: clamp(.95rem,3vw,1.2rem); font-weight: 800; color: #e8d5ff; margin-top: 6px; }
+  .causa-box { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 14px; padding: 13px 18px; margin: 18px auto 0; max-width: 520px; font-size: .92rem; color: #ddd6ff; line-height: 1.55; }
+
+  /* ── STATS ────────────────────────────────────── */
+  .stats { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 22px 0 8px; }
+  .stat-card { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 14px; padding: 11px 18px; text-align: center; min-width: 105px; }
+  .stat-num  { font-size: 1.55rem; font-weight: 900; line-height: 1; }
+  .stat-lbl  { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: .7; margin-top: 3px; }
+
+  /* ── LEGEND ───────────────────────────────────── */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0 12px; }
+  .leg { display: flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 700; }
+  .dot { width: 13px; height: 13px; border-radius: 4px; }
+
+  /* ── PRIZE ────────────────────────────────────── */
+  .prize { background: linear-gradient(135deg,rgba(255,213,79,.15),rgba(255,160,0,.1)); border: 1px solid rgba(255,213,79,.4); border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .prize-icon { font-size: 2.4rem; }
+  .prize h3 { font-size: .98rem; font-weight: 800; color: var(--gold); }
+  .prize p  { font-size: .86rem; color: #ddd; margin-top: 3px; }
+
+  /* ── CONTROLS ─────────────────────────────────── */
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+  .controls input {
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+    border-radius: 10px; padding: 9px 13px; color: #fff;
+    font-family: 'Nunito',sans-serif; font-size: .88rem; width: 190px; outline: none;
+  }
+  .controls input::placeholder { color: rgba(255,255,255,.4); }
+  .controls input:focus { border-color: var(--pink); }
+  .fbtn { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); border-radius: 10px; padding: 9px 13px; color: #fff; font-family: 'Nunito',sans-serif; font-size: .8rem; font-weight: 700; cursor: pointer; transition: all .18s; }
+  .fbtn:hover,.fbtn.active { background: var(--purple); border-color: var(--purple); }
+
+  /* ── GRID ─────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(56px,1fr)); gap: 7px; margin-bottom: 28px; }
+  .nb { aspect-ratio:1; border-radius: 11px; border: 2px solid transparent; font-family: 'Nunito',sans-serif; font-size: .86rem; font-weight: 800; cursor: pointer; transition: all .16s; display: flex; align-items: center; justify-content: center; }
+  .nb:hover { transform: scale(1.12); z-index: 2; }
+  .nb.available { background: rgba(74,222,128,.18); border-color: var(--available); color: var(--available); }
+  .nb.available:hover { background: var(--available); color: #052e16; }
+  .nb.reserved  { background: rgba(250,204,21,.2); border-color: var(--reserved); color: var(--reserved); cursor: default; }
+  .nb.paid      { background: rgba(96,165,250,.2); border-color: var(--paid);     color: var(--paid);     cursor: default; }
+  .nb.hidden    { display: none; }
+  .loading-grid { text-align: center; padding: 40px; opacity: .6; font-size: .95rem; }
+
+  /* ── PIX BAR ──────────────────────────────────── */
+  .pix-bar { background: linear-gradient(135deg,rgba(108,61,232,.35),rgba(224,64,251,.2)); border: 1px solid rgba(224,64,251,.4); border-radius: 16px; padding: 18px 22px; margin-bottom: 28px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+  .pix-bar h3 { font-size: .98rem; font-weight: 800; color: var(--pink); margin-bottom: 4px; }
+  .pix-bar p  { font-size: .87rem; color: #ddd; }
+  .pix-key { background: rgba(255,255,255,.12); border-radius: 10px; padding: 10px 16px; font-size: .98rem; font-weight: 900; cursor: pointer; border: 1px solid rgba(255,255,255,.25); transition: background .2s; user-select: all; }
+  .pix-key:hover { background: var(--purple); }
+  .copy-hint { font-size: .68rem; color: #bbb; margin-top: 3px; text-align: center; }
+
+  /* ── MODAL ────────────────────────────────────── */
+  .overlay { position: fixed; inset: 0; background: rgba(10,4,50,.85); backdrop-filter: blur(6px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity .22s; }
+  .overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: linear-gradient(145deg,#1e0f7a,#2d1b8a); border: 1px solid rgba(255,255,255,.2); border-radius: 22px; padding: 28px 26px; width: 100%; max-width: 420px; transform: translateY(18px); transition: transform .22s; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .overlay.open .modal { transform: translateY(0); }
+  .modal h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 4px; }
+  .num-big { font-size: 2.8rem; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 14px; }
+  .modal label { display: block; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #bbb; margin: 13px 0 5px; }
+  .modal input { width: 100%; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); border-radius: 11px; padding: 10px 13px; color: #fff; font-family: 'Nunito',sans-serif; font-size: .97rem; outline: none; }
+  .modal input:focus { border-color: var(--pink); }
+  .modal input.error { border-color: var(--danger) !important; }
+  .modal-pix { background: rgba(255,255,255,.07); border-radius: 11px; padding: 12px; margin-top: 14px; font-size: .86rem; color: #ddd; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 9px; margin-top: 18px; }
+  .btn-reservar { flex:1; background: linear-gradient(135deg,var(--purple),var(--pink)); border: none; border-radius: 11px; padding: 12px; color: #fff; font-family: 'Nunito',sans-serif; font-size: .97rem; font-weight: 800; cursor: pointer; transition: opacity .18s; }
+  .btn-reservar:hover { opacity: .88; }
+  .btn-reservar:disabled { opacity: .5; cursor: wait; }
+  .btn-cancelar { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 11px; padding: 12px 16px; color: #fff; font-family: 'Nunito',sans-serif; font-size: .92rem; font-weight: 700; cursor: pointer; }
+  .btn-cancelar:hover { background: rgba(255,255,255,.15); }
+
+  /* ── ADMIN TOGGLE ─────────────────────────────── */
+  .admin-toggle { display: block; margin: 0 auto 18px; background: rgba(255,255,255,.06); border: 1px dashed rgba(255,255,255,.2); border-radius: 10px; padding: 8px 20px; color: rgba(255,255,255,.45); font-family: 'Nunito',sans-serif; font-size: .76rem; font-weight: 700; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: all .2s; }
+  .admin-toggle:hover { color: #fff; border-color: rgba(255,255,255,.4); }
+
+  /* ── ADMIN PANEL ──────────────────────────────── */
+  .admin-panel { background: rgba(0,0,0,.32); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; padding: 18px; margin-bottom: 28px; display: none; }
+  .admin-panel.open { display: block; }
+  .admin-panel h3 { font-size: .98rem; font-weight: 800; color: var(--gold); margin-bottom: 12px; }
+  .auth-row { display: flex; gap: 9px; margin-bottom: 12px; }
+  .auth-row input { flex:1; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 9px 13px; color: #fff; font-family: 'Nunito',sans-serif; font-size: .88rem; outline: none; }
+  .auth-row button { background: var(--purple); border: none; border-radius: 10px; padding: 9px 16px; color: #fff; font-family: 'Nunito',sans-serif; font-weight: 800; cursor: pointer; }
+  .admin-list { display: flex; flex-direction: column; gap: 7px; max-height: 380px; overflow-y: auto; }
+  .ai { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.06); border-radius: 9px; padding: 9px 12px; font-size: .85rem; flex-wrap: wrap; }
+  .ntag { background: var(--gold); color: #000; font-weight: 900; border-radius: 5px; padding: 2px 7px; font-size: .82rem; flex-shrink: 0; }
+  .aname { flex: 1; min-width: 100px; }
+  .aname small { display: block; color: #999; font-size: .75rem; }
+  .stag { font-size: .7rem; font-weight: 700; border-radius: 999px; padding: 3px 9px; text-transform: uppercase; flex-shrink: 0; }
+  .stag.reserved { background: rgba(250,204,21,.2); color: var(--reserved); }
+  .stag.paid     { background: rgba(96,165,250,.2);  color: var(--paid);     }
+  .aa { display: flex; gap: 5px; flex-shrink: 0; }
+  .abtn { border: none; border-radius: 6px; padding: 4px 9px; font-size: .73rem; font-weight: 800; cursor: pointer; transition: opacity .18s; }
+  .abtn:hover { opacity: .78; }
+  .abtn.pay { background: var(--paid); color: #0c1a3a; }
+  .abtn.del { background: var(--danger); color: #3b0000; }
+  .admin-empty { color: rgba(255,255,255,.38); font-size: .88rem; text-align: center; padding: 18px 0; }
+
+  /* ── SUMMARY EXPORT ───────────────────────────── */
+  .export-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 8px 16px; color: #fff; font-family: 'Nunito',sans-serif; font-size: .8rem; font-weight: 700; cursor: pointer; margin-top: 12px; }
+  .export-btn:hover { background: rgba(255,255,255,.15); }
+
+  /* ── TOAST ────────────────────────────────────── */
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(18px); background: linear-gradient(135deg,#1e0f7a,var(--purple)); border: 1px solid rgba(255,255,255,.22); border-radius: 13px; padding: 11px 22px; font-size: .88rem; font-weight: 700; color: #fff; box-shadow: 0 10px 36px rgba(0,0,0,.4); z-index: 200; opacity: 0; transition: all .28s; white-space: nowrap; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer { text-align: center; padding: 18px 0 8px; font-size: .73rem; color: rgba(255,255,255,.3); }
+  @media(max-width:480px) { .grid { grid-template-columns: repeat(auto-fill,minmax(48px,1fr)); gap: 5px; } .nb { font-size: .78rem; } }
+</style>
+</head>
+<body>
+
+<div class="hearts" id="hearts"></div>
+
+<div class="container">
+
+  <!-- ═══ SETUP BANNER (aparece só se não configurado) ═══ -->
+  <div id="setupBanner" style="display:none">
+    <h2>⚙️ Configure o banco de dados (1 vez só)</h2>
+    Siga os passos abaixo — leva menos de 5 minutos:<br><br>
+    <strong>1.</strong> Acesse <a href="https://supabase.com" target="_blank">supabase.com</a> → crie conta gratuita → crie um projeto<br>
+    <strong>2.</strong> No painel do projeto vá em <strong>SQL Editor</strong> e cole e execute:<br>
+    <code style="display:block;margin:8px 0;padding:10px;white-space:pre-wrap">CREATE TABLE numeros (
+  numero INT PRIMARY KEY,
+  status TEXT DEFAULT 'available',
+  nome TEXT DEFAULT '',
+  telefone TEXT DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+INSERT INTO numeros (numero)
+SELECT generate_series(1,200);
+
+-- Acesso público de leitura e escrita
+ALTER TABLE numeros ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "leitura publica" ON numeros FOR SELECT USING (true);
+CREATE POLICY "reserva publica" ON numeros FOR UPDATE USING (status = 'available');</code>
+    <strong>3.</strong> Vá em <strong>Project Settings → API</strong> e copie a <strong>URL</strong> e a <strong>anon key</strong><br>
+    <strong>4.</strong> Cole abaixo e clique em Salvar:
+  </div>
+
+  <!-- ═══ CONFIG FORM ═══ -->
+  <div id="configForm" style="display:none">
+    <h3>🔑 Configuração do Supabase</h3>
+    <div class="cfg-row">
+      <input id="cfgUrl"  type="text" placeholder="URL do projeto (https://xxxx.supabase.co)" />
+      <input id="cfgKey"  type="text" placeholder="anon public key" />
+    </div>
+    <div class="cfg-row">
+      <input id="cfgPass" type="password" placeholder="Senha do painel admin (escolha uma)" />
+      <button class="btn-primary" onclick="saveConfig()">💾 Salvar e Iniciar</button>
+    </div>
+  </div>
+
+  <!-- ═══ HEADER ═══ -->
+  <header>
+    <div class="badge">💙 Causa Solidária</div>
+    <div class="t1">Rifa</div>
+    <div class="t1" style="color:#e8c8ff;margin-top:-6px">Beneficente</div>
+    <div class="t2">Ajude o Diogo 🙏</div>
+    <div class="causa-box">
+      Toda a renda será destinada ao tratamento do <strong>Diogo</strong>, que luta contra a <strong>osteomielite crônica</strong>. Cada número é um gesto de amor! ❤️
+    </div>
+  </header>
+
+  <div class="stats" id="stats">
+    <div class="stat-card"><div class="stat-num" style="color:var(--available)">…</div><div class="stat-lbl">Disponíveis</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--reserved)">…</div><div class="stat-lbl">Reservados</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--paid)">…</div><div class="stat-lbl">Pagos</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--gold)">…</div><div class="stat-lbl">Arrecadado</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="leg"><div class="dot" style="background:var(--available)"></div>Disponível</div>
+    <div class="leg"><div class="dot" style="background:var(--reserved)"></div>Reservado</div>
+    <div class="leg"><div class="dot" style="background:var(--paid)"></div>Pago ✓</div>
+  </div>
+
+  <div class="prize">
+    <div class="prize-icon">🍳</div>
+    <div>
+      <h3>Prêmio: Jogo de Panelas 5 Peças</h3>
+      <p>Cores preta ou cinza &nbsp;·&nbsp; Cada número: <strong style="color:var(--gold)">R$ 10,00</strong></p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="🔍 Buscar nome ou número…" oninput="renderGrid()">
+    <button class="fbtn active" onclick="setFilter('all',this)">Todos</button>
+    <button class="fbtn" onclick="setFilter('available',this)">Disponíveis</button>
+    <button class="fbtn" onclick="setFilter('reserved',this)">Reservados</button>
+    <button class="fbtn" onclick="setFilter('paid',this)">Pagos</button>
+  </div>
+
+  <div class="grid" id="grid"><div class="loading-grid">⏳ Carregando números…</div></div>
+
+  <div class="pix-bar">
+    <div>
+      <h3>💸 Pagamento via PIX</h3>
+      <p>Envie o comprovante no WhatsApp após reservar</p>
+      <p style="color:#aaa;font-size:.78rem;margin-top:3px">Titular: <strong style="color:#fff">Francineide Gonçalves Ramos</strong></p>
+    </div>
+    <div>
+      <div class="pix-key" onclick="copyPix()">📱 61992659634</div>
+      <div class="copy-hint">clique para copiar</div>
+    </div>
+  </div>
+
+  <button class="admin-toggle" onclick="toggleAdmin()">⚙️ Painel Administrativo</button>
+
+  <div class="admin-panel" id="adminPanel">
+    <div id="adminAuth">
+      <h3>🔒 Acesso Admin</h3>
+      <div class="auth-row">
+        <input type="password" id="adminPass" placeholder="Senha…" onkeydown="if(event.key==='Enter')checkAdmin()">
+        <button onclick="checkAdmin()">Entrar</button>
+      </div>
+    </div>
+    <div id="adminContent" style="display:none">
+      <h3>📋 Reservas — <span id="adminCount">0</span> registros</h3>
+      <div class="admin-list" id="adminList"></div>
+      <button class="export-btn" onclick="exportCSV()">⬇️ Exportar CSV</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeOut(event)">
+  <div class="modal">
+    <div style="font-size:1rem;font-weight:700;color:#bbb;margin-bottom:3px">Número Selecionado</div>
+    <div class="num-big" id="mNum">042</div>
+    <h2 id="mTitle">Reservar Número</h2>
+
+    <label>Nome completo *</label>
+    <input type="text"  id="mName"  placeholder="Ex: Maria Silva"      maxlength="80">
+
+    <label>WhatsApp / Telefone *</label>
+    <input type="tel"   id="mPhone" placeholder="Ex: 61999998888"       maxlength="20">
+
+    <div class="modal-pix">
+      💸 Após reservar, envie <strong>R$ 10,00</strong> via PIX:<br>
+      <strong style="font-size:1.02rem">61992659634</strong><br>
+      <span style="color:#aaa;font-size:.78rem">Francineide Gonçalves Ramos</span><br><br>
+      Envie o comprovante no WhatsApp para confirmar! 📲
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+      <button class="btn-reservar" id="btnReservar" onclick="confirmar()">✅ Reservar!</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Rifa Beneficente · Ajude o Diogo · Com ❤️</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════
+const CFG_KEY  = 'rifa_cfg_v1';
+let   supabase = null;
+let   ADMIN_PASS = '';
+
+function loadConfig() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || null; } catch { return null; }
+}
+function saveConfig() {
+  const url  = document.getElementById('cfgUrl').value.trim();
+  const key  = document.getElementById('cfgKey').value.trim();
+  const pass = document.getElementById('cfgPass').value.trim();
+  if (!url || !key || !pass) { toast('⚠️ Preencha todos os campos!'); return; }
+  localStorage.setItem(CFG_KEY, JSON.stringify({ url, key, pass }));
+  document.getElementById('setupBanner').style.display = 'none';
+  document.getElementById('configForm').style.display  = 'none';
+  initSupabase({ url, key, pass });
+}
+
+function initSupabase(cfg) {
+  ADMIN_PASS = cfg.pass;
+  supabase = window.supabase.createClient(cfg.url, cfg.key);
+  startApp();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOOTSTRAP
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  createHearts();
+  const cfg = loadConfig();
+  if (cfg) {
+    initSupabase(cfg);
+  } else {
+    document.getElementById('setupBanner').style.display = 'block';
+    document.getElementById('configForm').style.display  = 'block';
+    document.getElementById('grid').innerHTML = '<div class="loading-grid">Configure o banco de dados acima para começar.</div>';
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════════
+let rifaData = {};   // { 1: {numero,status,nome,telefone}, ... }
+let filter   = 'all';
+let selNum   = null;
+
+async function startApp() {
+  await fetchData();
+  subscribeRealtime();
+}
+
+async function fetchData() {
+  const { data, error } = await supabase
+    .from('numeros')
+    .select('*')
+    .order('numero');
+  if (error) { toast('❌ Erro ao carregar: ' + error.message); return; }
+  rifaData = {};
+  data.forEach(r => rifaData[r.numero] = r);
+  renderGrid();
+  renderStats();
+}
+
+function subscribeRealtime() {
+  supabase
+    .channel('numeros-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'numeros' }, payload => {
+      const r = payload.new || payload.old;
+      if (r && r.numero) rifaData[r.numero] = payload.new || { numero: r.numero, status:'available', nome:'', telefone:'' };
+      renderGrid();
+      renderStats();
+      if (adminUnlocked) renderAdminList();
+    })
+    .subscribe();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════
+function renderStats() {
+  const vals = Object.values(rifaData);
+  const av = vals.filter(v=>v.status==='available').length;
+  const re = vals.filter(v=>v.status==='reserved').length;
+  const pa = vals.filter(v=>v.status==='paid').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:var(--available)">${av}</div><div class="stat-lbl">Disponíveis</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--reserved)">${re}</div><div class="stat-lbl">Reservados</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--paid)">${pa}</div><div class="stat-lbl">Pagos</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--gold)">R$${pa*10}</div><div class="stat-lbl">Arrecadado</div></div>
+  `;
+}
+
+function renderGrid() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const g = document.getElementById('grid');
+  if (!Object.keys(rifaData).length) { g.innerHTML='<div class="loading-grid">⏳ Carregando…</div>'; return; }
+  let html = '';
+  for (let i = 1; i <= 200; i++) {
+    const d = rifaData[i] || { status:'available', nome:'', telefone:'' };
+    let hide = false;
+    if (filter !== 'all' && d.status !== filter) hide = true;
+    if (search && !d.nome.toLowerCase().includes(search) && !String(i).includes(search)) hide = true;
+    const label = String(i).padStart(3,'0');
+    const title = d.nome ? `${d.nome} – ${d.status}` : 'Disponível';
+    html += `<button class="nb ${d.status}${hide?' hidden':''}" title="${title}" ${d.status==='available'?`onclick="openModal(${i})"`:''}>${label}</button>`;
+  }
+  g.innerHTML = html;
+}
+
+function setFilter(f, el) {
+  filter = f;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════
+function openModal(num) {
+  selNum = num;
+  document.getElementById('mNum').textContent   = String(num).padStart(3,'0');
+  document.getElementById('mTitle').textContent = 'Reservar Número ' + String(num).padStart(3,'0');
+  document.getElementById('mName').value  = '';
+  document.getElementById('mPhone').value = '';
+  document.getElementById('mName').classList.remove('error');
+  document.getElementById('mPhone').classList.remove('error');
+  document.getElementById('btnReservar').disabled = false;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('mName').focus(), 280);
+}
+function closeModal() { document.getElementById('overlay').classList.remove('open'); selNum=null; }
+function closeOut(e) { if (e.target===document.getElementById('overlay')) closeModal(); }
+
+async function confirmar() {
+  const nome     = document.getElementById('mName').value.trim();
+  const telefone = document.getElementById('mPhone').value.trim();
+  let ok = true;
+  if (!nome)     { document.getElementById('mName').classList.add('error');  ok=false; }
+  if (!telefone) { document.getElementById('mPhone').classList.add('error'); ok=false; }
+  if (!ok) { toast('⚠️ Preencha nome e telefone!'); return; }
+
+  const btn = document.getElementById('btnReservar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Reservando…';
+
+  const { error } = await supabase
+    .from('numeros')
+    .update({ status:'reserved', nome, telefone, updated_at: new Date().toISOString() })
+    .eq('numero', selNum)
+    .eq('status','available');
+
+  if (error) {
+    toast('❌ Erro: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '✅ Reservar!';
+    return;
+  }
+  toast(`🎉 Número ${String(selNum).padStart(3,'0')} reservado para ${nome}!`);
+  closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PIX
+// ═══════════════════════════════════════════════════════════
+function copyPix() {
+  navigator.clipboard.writeText('61992659634')
+    .then(()=>toast('📋 Chave PIX copiada!'))
+    .catch(()=>toast('Chave PIX: 61992659634'));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════════════════════
+let adminUnlocked = false;
+function toggleAdmin() {
+  const p = document.getElementById('adminPanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open') && adminUnlocked) renderAdminList();
+}
+function checkAdmin() {
+  if (document.getElementById('adminPass').value === ADMIN_PASS) {
+    adminUnlocked = true;
+    document.getElementById('adminAuth').style.display    = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+    renderAdminList();
+  } else {
+    toast('❌ Senha incorreta!');
+  }
+}
+
+function renderAdminList() {
+  const entries = Object.values(rifaData).filter(v=>v.status!=='available')
+    .sort((a,b)=> (a.status==='reserved'?0:1)-(b.status==='reserved'?0:1) || a.numero-b.numero);
+  document.getElementById('adminCount').textContent = entries.length;
+  if (!entries.length) { document.getElementById('adminList').innerHTML='<div class="admin-empty">Nenhuma reserva ainda.</div>'; return; }
+  document.getElementById('adminList').innerHTML = entries.map(e=>`
+    <div class="ai">
+      <span class="ntag">${String(e.numero).padStart(3,'0')}</span>
+      <div class="aname">
+        ${e.nome}
+        <small>📱 ${e.telefone}</small>
+      </div>
+      <span class="stag ${e.status}">${e.status==='paid'?'✓ Pago':'Reservado'}</span>
+      <div class="aa">
+        ${e.status==='reserved'?`<button class="abtn pay" onclick="marcarPago(${e.numero})">✓ Pago</button>`:''}
+        <button class="abtn del" onclick="liberar(${e.numero})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function marcarPago(num) {
+  const { error } = await supabase.from('numeros').update({ status:'paid', updated_at: new Date().toISOString() }).eq('numero',num);
+  if (error) { toast('❌ '+error.message); return; }
+  toast(`✅ Número ${String(num).padStart(3,'0')} marcado como pago!`);
+}
+
+async function liberar(num) {
+  const nome = rifaData[num]?.nome || num;
+  if (!confirm(`Liberar número ${String(num).padStart(3,'0')} (${nome})?`)) return;
+  const { error } = await supabase.from('numeros').update({ status:'available', nome:'', telefone:'', updated_at: new Date().toISOString() }).eq('numero',num);
+  if (error) { toast('❌ '+error.message); return; }
+  toast(`🔓 Número ${String(num).padStart(3,'0')} liberado.`);
+}
+
+function exportCSV() {
+  const entries = Object.values(rifaData).filter(v=>v.status!=='available').sort((a,b)=>a.numero-b.numero);
+  const rows = [['Número','Nome','Telefone','Status'],...entries.map(e=>[e.numero,e.nome,e.telefone,e.status])];
+  const csv = rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rifa-diogo.csv'; a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HEARTS
+// ═══════════════════════════════════════════════════════════
+function createHearts() {
+  const c = document.getElementById('hearts');
+  for (let i=0;i<18;i++) {
+    const h = document.createElement('div'); h.className='heart'; h.textContent='♥';
+    h.style.left              = Math.random()*100+'%';
+    h.style.fontSize          = (1.5+Math.random()*2.5)+'rem';
+    h.style.animationDuration = (12+Math.random()*20)+'s';
+    h.style.animationDelay    = (Math.random()*20)+'s';
+    c.appendChild(h);
+  }
+}
+</script>
+</body>
+</html>
