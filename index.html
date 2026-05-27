@@ -348,17 +348,15 @@ let   sb = null;
 let   ADMIN_PASS = '';
 
 function loadConfig() {
-  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || null; } catch { return null; }
+  // Credenciais fixas — não precisa configurar
+  return {
+    url: 'https://bmazjhrnlqdfumptplly.supabase.co',
+    key: 'sb_publishable_g0P6ZIoZIXjH0hbapAxigw_1QWqetx8',
+    pass: 'diogo2024'
+  };
 }
 function saveConfig() {
-  const url  = document.getElementById('cfgUrl').value.trim();
-  const key  = document.getElementById('cfgKey').value.trim();
-  const pass = document.getElementById('cfgPass').value.trim();
-  if (!url || !key || !pass) { toast('⚠️ Preencha todos os campos!'); return; }
-  localStorage.setItem(CFG_KEY, JSON.stringify({ url, key, pass }));
-  document.getElementById('setupBanner').style.display = 'none';
-  document.getElementById('configForm').style.display  = 'none';
-  initSupabase({ url, key, pass });
+  // não usado mais
 }
 
 function initSupabase(cfg) {
@@ -372,14 +370,10 @@ function initSupabase(cfg) {
 // ═══════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   createHearts();
+  document.getElementById('setupBanner').style.display = 'none';
+  document.getElementById('configForm').style.display  = 'none';
   const cfg = loadConfig();
-  if (cfg) {
-    initSupabase(cfg);
-  } else {
-    document.getElementById('setupBanner').style.display = 'block';
-    document.getElementById('configForm').style.display  = 'block';
-    document.getElementById('grid').innerHTML = '<div class="loading-grid">Configure o banco de dados acima para começar.</div>';
-  }
+  initSupabase(cfg);
 });
 
 // ═══════════════════════════════════════════════════════════
