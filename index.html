@@ -282,7 +282,17 @@ CREATE POLICY "reserva publica" ON numeros FOR UPDATE USING (status = 'available
   <button class="admin-toggle" onclick="toggleAdmin()">⚙️ Painel Administrativo</button>
 
   <div class="admin-panel" id="adminPanel">
-    <div id="adminAuth">
+    <div id="adminConfigSection" style="display:none">
+      <h3>⚙️ Configurar Banco de Dados</h3>
+      <p style="font-size:.85rem;color:#ddd;margin-bottom:12px">Cole as informações do Supabase para ativar a rifa:</p>
+      <div class="cfg-row"><input id="cfgUrl" type="text" placeholder="URL do projeto (https://xxxx.supabase.co)"/></div>
+      <div class="cfg-row"><input id="cfgKey" type="text" placeholder="Chave publicável (sb_publishable_...)"/></div>
+      <div class="cfg-row">
+        <input id="cfgPass" type="password" placeholder="Crie uma senha para o admin"/>
+        <button class="btn-primary" onclick="saveConfig()">💾 Salvar e Iniciar</button>
+      </div>
+    </div>
+    <div id="adminAuth" style="display:none">
       <h3>🔒 Acesso Admin</h3>
       <div class="auth-row">
         <input type="password" id="adminPass" placeholder="Senha…" onkeydown="if(event.key==='Enter')checkAdmin()">
@@ -511,7 +521,22 @@ let adminUnlocked = false;
 function toggleAdmin() {
   const p = document.getElementById('adminPanel');
   p.classList.toggle('open');
-  if (p.classList.contains('open') && adminUnlocked) renderAdminList();
+  if (p.classList.contains('open')) {
+    if (!supabase) {
+      document.getElementById('adminConfigSection').style.display = 'block';
+      document.getElementById('adminAuth').style.display = 'none';
+      document.getElementById('adminContent').style.display = 'none';
+    } else if (adminUnlocked) {
+      document.getElementById('adminConfigSection').style.display = 'none';
+      document.getElementById('adminAuth').style.display = 'none';
+      document.getElementById('adminContent').style.display = 'block';
+      renderAdminList();
+    } else {
+      document.getElementById('adminConfigSection').style.display = 'none';
+      document.getElementById('adminAuth').style.display = 'block';
+      document.getElementById('adminContent').style.display = 'none';
+    }
+  }
 }
 function checkAdmin() {
   if (document.getElementById('adminPass').value === ADMIN_PASS) {
