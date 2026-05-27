@@ -344,7 +344,7 @@ CREATE POLICY "reserva publica" ON numeros FOR UPDATE USING (status = 'available
 //  CONFIG
 // ═══════════════════════════════════════════════════════════
 const CFG_KEY  = 'rifa_cfg_v1';
-let   supabase = null;
+let   sb = null;
 let   ADMIN_PASS = '';
 
 function loadConfig() {
@@ -363,7 +363,7 @@ function saveConfig() {
 
 function initSupabase(cfg) {
   ADMIN_PASS = cfg.pass;
-  supabase = window.supabase.createClient(cfg.url, cfg.key);
+  sb = window.supabase.createClient(cfg.url, cfg.key);
   startApp();
 }
 
@@ -395,7 +395,7 @@ async function startApp() {
 }
 
 async function fetchData() {
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from('numeros')
     .select('*')
     .order('numero');
@@ -407,7 +407,7 @@ async function fetchData() {
 }
 
 function subscribeRealtime() {
-  supabase
+  sb
     .channel('numeros-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'numeros' }, payload => {
       const r = payload.new || payload.old;
@@ -489,7 +489,7 @@ async function confirmar() {
   btn.disabled = true;
   btn.textContent = '⏳ Reservando…';
 
-  const { error } = await supabase
+  const { error } = await sb
     .from('numeros')
     .update({ status:'reserved', nome, telefone, updated_at: new Date().toISOString() })
     .eq('numero', selNum)
@@ -522,7 +522,7 @@ function toggleAdmin() {
   const p = document.getElementById('adminPanel');
   p.classList.toggle('open');
   if (p.classList.contains('open')) {
-    if (!supabase) {
+    if (!sb) {
       document.getElementById('adminConfigSection').style.display = 'block';
       document.getElementById('adminAuth').style.display = 'none';
       document.getElementById('adminContent').style.display = 'none';
@@ -571,7 +571,7 @@ function renderAdminList() {
 }
 
 async function marcarPago(num) {
-  const { error } = await supabase.from('numeros').update({ status:'paid', updated_at: new Date().toISOString() }).eq('numero',num);
+  const { error } = await sb.from('numeros').update({ status:'paid', updated_at: new Date().toISOString() }).eq('numero',num);
   if (error) { toast('❌ '+error.message); return; }
   toast(`✅ Número ${String(num).padStart(3,'0')} marcado como pago!`);
 }
@@ -579,7 +579,7 @@ async function marcarPago(num) {
 async function liberar(num) {
   const nome = rifaData[num]?.nome || num;
   if (!confirm(`Liberar número ${String(num).padStart(3,'0')} (${nome})?`)) return;
-  const { error } = await supabase.from('numeros').update({ status:'available', nome:'', telefone:'', updated_at: new Date().toISOString() }).eq('numero',num);
+  const { error } = await sb.from('numeros').update({ status:'available', nome:'', telefone:'', updated_at: new Date().toISOString() }).eq('numero',num);
   if (error) { toast('❌ '+error.message); return; }
   toast(`🔓 Número ${String(num).padStart(3,'0')} liberado.`);
 }
